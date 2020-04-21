@@ -39,7 +39,7 @@ function GET_HELM_VERSION() {
 }
 
 # Ensure we have at least 1 helm version
-KNOWN_VERSION="v2.16.0"
+KNOWN_VERSION="v2.13.6"
 LOCAL_HELM=$HX_PATH/helm-$KNOWN_VERSION
 HELM_PATH=$(command -v helm)
 if [ -n "$HELM_PATH" ]; then
