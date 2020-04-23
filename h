@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set +x
+set -euo pipefail
 
+H_DEBUG="${H_DEBUG:-false}"
 HX_PATH="$HOME/.hx"
 mkdir -p "$HX_PATH"
 
@@ -27,32 +29,50 @@ case $CPU_ARCHITECTURE in
   i386) CPU_ARCHITECTURE="386";;
 esac
 
-function GET_HELM_VERSION() {
-  VERSION=$1
-  HELM_PATH=$HX_PATH/helm-$VERSION
-  HELM_TAR="$HELM_PATH.tar.gz"
-
-  curl -L -o "$HELM_TAR" "https://get.helm.sh/helm-$VERSION-$OS-$CPU_ARCHITECTURE.tar.gz"
-  tar --extract --file="$HELM_TAR" --strip=1 --directory="$HX_PATH" $OS-$CPU_ARCHITECTURE/helm
-  mv "$HX_PATH/helm" "$HELM_PATH"
-  rm "$HELM_TAR"
+function log {
+  if [ ${H_DEBUG} == true ]; then
+    echo "h: $*" >&2
+  fi
 }
 
-# Ensure we have at least 1 helm version
-KNOWN_VERSION="v2.13.1"
-LOCAL_HELM=$HX_PATH/helm-$KNOWN_VERSION
+function get-helm-version {
+  local version=$1
+  local helm_path=$HX_PATH/helm-$version
+  local helm_tar="$helm_path.tar.gz"
+
+  if [ ! -f ${helm_path} ]; then
+    log "installing ${helm_path} ..."
+    curl -L -o "$helm_tar" "https://get.helm.sh/helm-$version-$OS-$CPU_ARCHITECTURE.tar.gz"
+    tar --extract --file="$helm_tar" --strip=1 --directory="$HX_PATH" $OS-$CPU_ARCHITECTURE/helm
+    mv "$HX_PATH/helm" "$helm_path"
+    rm "$helm_tar"
+  else
+    log "${helm_path} already installed ..."
+  fi
+}
+
+DEFAULT_VERSION="${DEFAULT_VERSION:-"v2.13.1"}"
+LOCAL_HELM=$HX_PATH/helm-$DEFAULT_VERSION
 HELM_PATH=$(command -v helm)
-if [ -n "$HELM_PATH" ]; then
+
+if [ -n "$HELM_PATH" ] && $HELM_PATH version | grep -q "Server:"; then
   LOCAL_HELM=$HELM_PATH
-elif [ ! -f "$LOCAL_HELM" ]; then
-  GET_HELM_VERSION $KNOWN_VERSION
+else
+  log "${HELM_PATH} is available but is helm3. Avoiding..."
 fi
+
+if [ ! -f "$LOCAL_HELM" ]; then
+  get-helm-version $DEFAULT_VERSION
+fi
+
+log "using ${LOCAL_HELM} to determine Tiller version ..."
 
 TARGET_VERSION=$($LOCAL_HELM version --template '{{ .Server.SemVer }}' || echo $KNOWN_VERSION)
 TARGET="$HX_PATH/helm-$TARGET_VERSION"
 
 if [ ! -f "$TARGET" ]; then
-  GET_HELM_VERSION "$TARGET_VERSION"
+  get-helm-version "$TARGET_VERSION"
 fi
 
+log "using ${TARGET} ..."
 $TARGET "$@"
