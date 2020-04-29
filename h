@@ -67,7 +67,7 @@ fi
 
 log "using ${LOCAL_HELM} to determine Tiller version ..."
 
-TARGET_VERSION=$($LOCAL_HELM version --template '{{ .Server.SemVer }}' || echo $KNOWN_VERSION)
+TARGET_VERSION=$($LOCAL_HELM version --template '{{ .Server.SemVer }}' || echo $DEFAULT_VERSION)
 TARGET="$HX_PATH/helm-$TARGET_VERSION"
 
 if [ ! -f "$TARGET" ]; then
