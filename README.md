@@ -10,4 +10,4 @@ I named it `h` since most everyone appears to alias `helm` to `h` anyway.
 
 Download the file to somewhere in your path. Any time you would call `helm ...`, call `h ...` instead.
 
-`curl -OL https://raw.githubusercontent.com/jakepearson/h/master/h && chmod +x h`
+`curl -OL https://raw.githubusercontent.com/deis/h/master/h && chmod +x h`
